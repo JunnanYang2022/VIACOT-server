@@ -42,6 +42,10 @@ public class LineageTree {
      */
     private String species;
     /**
+     * 细胞类型
+     */
+    private String cellType;
+    /**
      * 树id
      */
     private String treeId;

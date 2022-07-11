@@ -7,7 +7,8 @@
         node_name name,
         generation,
         ancestor_id,
-        species value
+        species value,
+        cell_type
         FROM tb_lineage_tree
         <where>
             <if test="treeId != null and treeId !=''">
@@ -25,7 +26,8 @@
         T.generation,
         T.ancestor_id,
         T.species,
-        C.cell_discription
+        C.cell_discription,
+        T.cell_type
         FROM tb_lineage_tree T
         LEFT JOIN cell_annotation C ON T.node_id = C.node_id
         <where>
@@ -84,6 +86,7 @@
             </if>
         </where>
         GROUP BY T.tree_id
+        ORDER BY T.tree_index ASC
     </select>
 
 </mapper>

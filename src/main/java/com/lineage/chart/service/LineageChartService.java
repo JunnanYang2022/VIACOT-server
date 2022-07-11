@@ -1,5 +1,6 @@
 package com.lineage.chart.service;
 
+import com.lineage.chart.entity.CellType;
 import com.lineage.chart.qo.ConstructQO;
 import com.lineage.chart.qo.SearchQo;
 import com.lineage.chart.vo.GeneCompareTreeChartVO;
@@ -64,4 +65,12 @@ public interface LineageChartService {
      * @return SimilarityVO
      */
     SimilarityVO getSimilarity(ConstructQO qo);
+
+    /**
+     * 根据树id查询细胞类型列表
+     *
+     * @param treeId 树id
+     * @return list
+     */
+    List<CellType> getCellTypeList(String treeId);
 }

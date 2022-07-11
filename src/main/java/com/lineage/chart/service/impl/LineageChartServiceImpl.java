@@ -4,9 +4,11 @@ import cn.hutool.core.lang.UUID;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.util.IOUtils;
 import com.lineage.chart.constant.CellTypeConstant;
+import com.lineage.chart.entity.CellType;
 import com.lineage.chart.entity.GenesExpression;
 import com.lineage.chart.entity.ItemStyle;
 import com.lineage.chart.entity.LineageTree;
+import com.lineage.chart.mapper.CellTypeMapper;
 import com.lineage.chart.mapper.GenesExpressionMapper;
 import com.lineage.chart.mapper.LineageChartMapper;
 import com.lineage.chart.qo.ConstructQO;
@@ -28,6 +30,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -47,6 +50,9 @@ public class LineageChartServiceImpl implements LineageChartService {
     private LineageChartMapper mapper;
 
     @Resource
+    private CellTypeMapper cellTypeMapper;
+
+    @Resource
     private GenesExpressionMapper genesExpressionMapper;
 
     @Override
@@ -56,31 +62,41 @@ public class LineageChartServiceImpl implements LineageChartService {
             // 节点名称不为空  则查出此节点作为根节点构造树
             TreeChartVO root = mapper.queryOneByNodeName(qo.getTreeId(), qo.getNodeName());
             List<TreeChartVO> all = mapper.queryLineageTreeData(qo.getTreeId(), root.getGeneration());
-            return getTree(Collections.singletonList(root), all);
+            return getTree(Collections.singletonList(root), all, null);
         }
 
         Integer generation = 1;
         List<TreeChartVO> all = mapper.queryLineageTreeData(qo.getTreeId(), generation);
 
-        // 构造value
+        //过滤出某代的数据作为一级节点
+        List<TreeChartVO> root =
+                all.parallelStream().filter(e -> e.getGeneration().equals(generation)).collect(Collectors.toList());
+
+        List<CellType> cellTypeList = cellTypeMapper.selectListByTreeId(qo.getTreeId());
+        Map<String, String> cellTypeMap =
+                cellTypeList.stream().collect(Collectors.toConcurrentMap(CellType::getCellType,
+                        CellType::getColor));
+        return getTree(root, all, cellTypeMap);
+    }
+
+    private List<TreeChartVO> getTree(List<TreeChartVO> root, List<TreeChartVO> all, Map<String, String> cellTypeMap) {
+        // 注入样式和value
         all.parallelStream().forEach(e -> {
             String value = "Generation:" + e.getGeneration() + ";  Species:" + e.getSpecies();
             if (StringUtils.isNotBlank(e.getCellDiscription())) {
                 value += ";  Cell  Description:" + e.getCellDiscription();
             }
             e.setValue(value);
+
+            ItemStyle itemStyle = new ItemStyle();
+            if (cellTypeMap != null && StringUtils.isNotBlank(e.getCellType())) {
+                String color = cellTypeMap.get(e.getCellType());
+                itemStyle.setBorderColor(color);
+                itemStyle.setBorderWidth(8);
+            }
+            e.setItemStyle(itemStyle);
+
         });
-
-        //过滤出某代的数据作为一级节点
-        List<TreeChartVO> root =
-                all.parallelStream().filter(e -> e.getGeneration().equals(generation)).collect(Collectors.toList());
-
-        return getTree(root, all);
-    }
-
-    private List<TreeChartVO> getTree(List<TreeChartVO> root, List<TreeChartVO> all) {
-        ItemStyle itemStyle = new ItemStyle();
-        all.parallelStream().forEach(e -> e.setItemStyle(itemStyle));
         settChildrenNode(root, all);
         return root;
     }
@@ -211,6 +227,10 @@ public class LineageChartServiceImpl implements LineageChartService {
                 treeChartVOS2.parallelStream().filter(e -> e.getGeneration().equals(generation)).collect(Collectors.toList());
 
         // 构造value
+        List<CellType> cellTypeList1 = cellTypeMapper.selectListByTreeId(qo.getTreeId1());
+        Map<String, String> cellTypeMap1 =
+                cellTypeList1.stream().collect(Collectors.toConcurrentMap(CellType::getCellType,
+                        CellType::getColor));
         treeChartVOS1.parallelStream().forEach(e -> {
             String value = "Generation:" + e.getGeneration() + ";  Species:" + e.getSpecies();
             if (StringUtils.isNotBlank(e.getCellDiscription())) {
@@ -218,10 +238,14 @@ public class LineageChartServiceImpl implements LineageChartService {
             }
             e.setValue(value);
 
-            setTypeColor(qo.getTreeId1(), e);
+            setTypeColor(qo.getTreeId1(), e, cellTypeMap1);
         });
 
         // 构造value
+        List<CellType> cellTypeList2 = cellTypeMapper.selectListByTreeId(qo.getTreeId2());
+        Map<String, String> cellTypeMap2 =
+                cellTypeList2.stream().collect(Collectors.toConcurrentMap(CellType::getCellType,
+                        CellType::getColor));
         treeChartVOS2.parallelStream().forEach(e -> {
             String value = "Generation:" + e.getGeneration() + ";  Species:" + e.getSpecies();
             if (StringUtils.isNotBlank(e.getCellDiscription())) {
@@ -229,7 +253,7 @@ public class LineageChartServiceImpl implements LineageChartService {
             }
             e.setValue(value);
 
-            setTypeColor(qo.getTreeId2(), e);
+            setTypeColor(qo.getTreeId2(), e, cellTypeMap2);
         });
 
         settChildrenNode(root1, treeChartVOS1);
@@ -241,11 +265,11 @@ public class LineageChartServiceImpl implements LineageChartService {
         return result;
     }
 
-    private void setTypeColor(String treeId, TreeChartVO e) {
+    private void setTypeColor(String treeId, TreeChartVO e, Map<String, String> cellTypeMap) {
         if ("P.Marina".equals(treeId)) {
             String type = CellTypeConstant.getPmaMap().get(e.getNodeId());
             if (StringUtils.isNotBlank(type)) {
-                String color = CellTypeConstant.getPmaClolrMap().get(type);
+                String color = cellTypeMap.get(type);
                 if (StringUtils.isNotBlank(color)) {
                     ItemStyle itemStyle = new ItemStyle();
                     itemStyle.setBorderColor(color);
@@ -256,7 +280,7 @@ public class LineageChartServiceImpl implements LineageChartService {
         } else if ("C.elegans".equals(treeId)) {
             String type = CellTypeConstant.getCelMap().get(e.getNodeId());
             if (StringUtils.isNotBlank(type)) {
-                String color = CellTypeConstant.getCelClolrMap().get(type);
+                String color = cellTypeMap.get(type);
                 if (StringUtils.isNotBlank(color)) {
                     ItemStyle itemStyle = new ItemStyle();
                     itemStyle.setBorderColor(color);
@@ -358,6 +382,12 @@ public class LineageChartServiceImpl implements LineageChartService {
         vo.setSimilarity(gene1.getSimilarity(gene2));
         return vo;
     }
+
+    @Override
+    public List<CellType> getCellTypeList(String treeId) {
+        return cellTypeMapper.selectListByTreeId(treeId);
+    }
+
 
     /**
      * 递归解析数据

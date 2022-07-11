@@ -11,34 +11,6 @@ public class CellTypeConstant {
     public static final ConcurrentHashMap<String, String> PMA = new ConcurrentHashMap<>();
     public static final ConcurrentHashMap<String, String> CEL = new ConcurrentHashMap<>();
 
-    public static final ConcurrentHashMap<String, String> PMA_COLOR = new ConcurrentHashMap<>();
-    public static final ConcurrentHashMap<String, String> CEL_COLOR = new ConcurrentHashMap<>();
-
-    public static ConcurrentHashMap<String, String> getPmaClolrMap(){
-        PMA_COLOR.put("Other", "rgb(189,189,189)");
-        PMA_COLOR.put("Death", "rgb(4,0,1)");
-        PMA_COLOR.put("Epiderm", "rgb(125,188,210)");
-        PMA_COLOR.put("Germ", "rgb(103,65,142)");
-        PMA_COLOR.put("Pharynx", "rgb(185,158,23)");
-        PMA_COLOR.put("Intestine", "rgb(214,100,150)");
-        PMA_COLOR.put("Muscle", "rgb(191,98,31)");
-        PMA_COLOR.put("Nervous system", "rgb(141,197,178)");
-        return PMA_COLOR;
-    }
-
-    public static ConcurrentHashMap<String, String> getCelClolrMap(){
-        CEL_COLOR.put("Blast", "rgb(150,150,150)");
-        CEL_COLOR.put("Epithelial", "rgb(122,174,213)");
-        CEL_COLOR.put("Death", "rgb(4,0,1)");
-        CEL_COLOR.put("Germ", "rgb(103,65,142)");
-        CEL_COLOR.put("Gland", "rgb(216,185,35)");
-        CEL_COLOR.put("Intestine", "rgb(214,100,150)");
-        CEL_COLOR.put("Muscle", "rgb(191,98,31)");
-        CEL_COLOR.put("Neuron", "rgb(141,197,178)");
-        CEL_COLOR.put("Structral", "rgb(103,180,151)");
-        return CEL_COLOR;
-    }
-
     public static ConcurrentHashMap<String, String> getPmaMap() {
         PMA.put("0000000000", "Nervous system");
         PMA.put("0000000001", "Nervous system");
@@ -702,7 +674,7 @@ public class CellTypeConstant {
         return PMA;
     }
 
-    public static ConcurrentHashMap<String, String> getCelMap(){
+    public static ConcurrentHashMap<String, String> getCelMap() {
         CEL.put("0111000010", "Blast");
         CEL.put("010010010", "Blast");
         CEL.put("010000111", "Blast");
@@ -1396,10 +1368,5 @@ public class CellTypeConstant {
 
 
         return CEL;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(getCelMap().get("0111110100"));
-        System.out.println(getCelClolrMap().get(getCelMap().get("0111110100")));
     }
 }

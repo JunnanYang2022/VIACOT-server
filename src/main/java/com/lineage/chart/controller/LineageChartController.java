@@ -1,5 +1,6 @@
 package com.lineage.chart.controller;
 
+import com.lineage.chart.entity.CellType;
 import com.lineage.chart.qo.ConstructQO;
 import com.lineage.chart.qo.SearchQo;
 import com.lineage.chart.service.LineageChartService;
@@ -9,6 +10,7 @@ import com.lineage.chart.vo.SimilarityVO;
 import com.lineage.chart.vo.TreeChartVO;
 import com.lineage.response.ResultBean;
 import com.lineage.response.ResultHandler;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -113,6 +115,26 @@ public class LineageChartController {
         } catch (Exception e) {
             LOGGER.error("计算两个基因的相关系数出错:", e);
             return ResultHandler.error("计算两个基因的相关系数出错，请稍后重试！");
+        }
+    }
+
+    /**
+     * 根据树id查询细胞类型列表
+     *
+     * @param treeId 树id
+     * @return list
+     */
+    @RequestMapping("/getCellTypeList")
+    public ResultBean<List<CellType>> getCellTypeList(String treeId) {
+        try {
+            if (StringUtils.isBlank(treeId)) {
+                return ResultHandler.error("树id不可为空！");
+            }
+            List<CellType> result = service.getCellTypeList(treeId);
+            return ResultHandler.ok(result);
+        } catch (Exception e) {
+            LOGGER.error("查询细胞类型列表出错:", e);
+            return ResultHandler.error("查询细胞类型列表出错，请稍后重试！");
         }
     }
 

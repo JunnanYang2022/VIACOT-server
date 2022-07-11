@@ -5,6 +5,7 @@
     <select id="queryTree" resultType="com.lineage.chart.entity.Tree">
         SELECT tree_id, tree_name
         FROM tb_tree
+        ORDER BY tree_index ASC
     </select>
 
     <select id="queryGeneByTreeId" resultType="java.lang.String">

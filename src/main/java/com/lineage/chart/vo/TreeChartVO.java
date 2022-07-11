@@ -1,6 +1,7 @@
 package com.lineage.chart.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.lineage.chart.entity.CellType;
 import com.lineage.chart.entity.ItemStyle;
 import lombok.Data;
 
@@ -8,7 +9,7 @@ import java.util.List;
 
 /**
  * @author YangJunNan
- * @description  echarts树节点数据
+ * @description echarts树节点数据
  * @date 2020/9/8
  */
 @Data
@@ -52,6 +53,11 @@ public class TreeChartVO {
      * 基因表达量
      */
     private Integer expressionOrBlot;
+
+    /**
+     * 细胞类型
+     */
+    private String cellType;
 
     /**
      * 子节点数据

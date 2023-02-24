@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lineage.chart.mapper.BaseDataMapper">
+
+    <select id="queryTree" resultType="com.lineage.chart.entity.Tree">
+        SELECT tree_id, tree_name
+        FROM tb_tree
+        ORDER BY tree_index ASC
+    </select>
+
+    <select id="queryGeneByTreeId" resultType="java.lang.String">
+        SELECT DISTINCT gene_name
+        FROM tb_genes_expression
+        WHERE tree_id = #{treeId,jdbcType=VARCHAR}
+    </select>
+</mapper>

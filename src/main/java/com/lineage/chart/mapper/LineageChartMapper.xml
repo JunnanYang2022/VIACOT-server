@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lineage.chart.mapper.LineageChartMapper">
+
+    <select id="queryOneByNodeName" resultType="com.lineage.chart.vo.TreeChartVO">
+        SELECT node_id,
+        node_name name,
+        generation,
+        ancestor_id,
+        species value,
+        cell_type
+        FROM tb_lineage_tree
+        <where>
+            <if test="treeId != null and treeId !=''">
+                tree_id = #{treeId,jdbcType=VARCHAR}
+            </if>
+            <if test="nodeName != null and nodeName != ''">
+                AND node_name = #{nodeName,jdbcType=VARCHAR}
+            </if>
+        </where>
+    </select>
+
+    <select id="queryLineageTreeData" resultType="com.lineage.chart.vo.TreeChartVO">
+        SELECT T.node_id,
+        T.node_name name,
+        T.generation,
+        T.ancestor_id,
+        T.species,
+        C.cell_discription,
+        T.cell_type
+        FROM tb_lineage_tree T
+        LEFT JOIN cell_annotation C ON T.node_id = C.node_id
+        <where>
+            <if test="treeId != null and treeId !=''">
+                T.tree_id = #{treeId,jdbcType=VARCHAR}
+            </if>
+            <if test="generation != null">
+                AND T.generation >= #{generation,jdbcType=DECIMAL}
+            </if>
+        </where>
+    </select>
+
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO tb_lineage_tree (
+        node_id,
+        node_name,
+        ancestor_id,
+        child_id,
+        generation,
+        species,
+        tree_id,
+        time_flag
+        )
+        VALUES
+        <foreach collection="list" index="index" item="item" separator=",">
+            (
+            #{item.nodeId,jdbcType=VARCHAR},
+            #{item.nodeName,jdbcType=VARCHAR},
+            #{item.ancestorId,jdbcType=VARCHAR},
+            #{item.childId,jdbcType=VARCHAR},
+            #{item.generation,jdbcType=DECIMAL},
+            #{item.species,jdbcType=VARCHAR},
+            #{item.treeId,jdbcType=VARCHAR},
+            CURRENT_TIMESTAMP ()
+            )
+        </foreach>
+    </insert>
+
+    <select id="search" resultType="com.lineage.chart.vo.SearchVO">
+        SELECT
+        T.tree_id,
+        T. tree_name,
+        T.species,
+        T.latin_name,
+        T.paper,
+        T.eoa,
+        COUNT(1) cellNum
+        FROM tb_tree T
+        LEFT JOIN tb_lineage_tree V ON T.tree_id = V.tree_id
+        <where>
+            <if test="qo.species != null and qo.species != ''">
+                T.species LIKE CONCAT('%', #{qo.species}, '%')
+            </if>
+            <if test="qo.species != null and qo.species != ''">
+                OR T.latin_name LIKE CONCAT('%', #{qo.species}, '%')
+            </if>
+        </where>
+        GROUP BY T.tree_id
+        ORDER BY T.tree_index ASC
+    </select>
+
+</mapper>

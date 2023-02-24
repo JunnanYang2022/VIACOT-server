@@ -1,0 +1,13 @@
+spring:
+  # 环境 dev|test|pro
+  profiles:
+    active: pro
+
+# Mybatis配置
+mybatis: 
+  mapper-locations: classpath:com/lineage/chart/mapper/*Mapper.xml
+  configuration: 
+    map-underscore-to-camel-case: true
+
+logging:
+  config: classpath:logback-spring.xml

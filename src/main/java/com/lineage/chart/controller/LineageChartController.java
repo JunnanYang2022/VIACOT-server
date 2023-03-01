@@ -138,4 +138,21 @@ public class LineageChartController {
         }
     }
 
+    /**
+     * Newick文件上传并解析
+     *
+     * @param file 谱系树json文件
+     * @return
+     */
+    @RequestMapping("/uploadNewick")
+    public ResultBean<Object> uploadNewick(MultipartFile file) {
+        try {
+            List<TreeChartVO> vo = service.uploadNewick(file);
+            return ResultHandler.ok(vo);
+        } catch (Exception e) {
+            LOGGER.error("上传文件出错:", e);
+            return ResultHandler.error("上传失败，请稍后重试！");
+        }
+    }
+
 }

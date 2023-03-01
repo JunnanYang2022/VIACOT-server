@@ -1,13 +1,10 @@
 package com.lineage.data.util;
 
 import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.io.FileUtil;
 import com.lineage.chart.entity.LineageTree;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created on 12/18/16
@@ -33,7 +30,7 @@ public class NewickTree {
         return root;
     }
 
-    static NewickTree readNewickFormat(String newick) {
+    public static NewickTree readNewickFormat(String newick) {
         return new NewickTree().innerReadNewickFormat(newick);
     }
 
@@ -52,8 +49,11 @@ public class NewickTree {
                     rightParenCount++;
                     break;
                 case ',':
-                    if (leftParenCount == rightParenCount) splitIndices.add(i);
+                    if (leftParenCount == rightParenCount) {
+                        splitIndices.add(i);
+                    }
                     break;
+                default:
             }
         }
 
@@ -115,7 +115,7 @@ public class NewickTree {
         }
     }
 
-    static class Node {
+    public static class Node {
         final String name;
         final int weight;
         boolean realName = false;
@@ -215,36 +215,20 @@ public class NewickTree {
     }
 
 
-    public static void main(String[] args) {
-        String rootPath = "D:\\YJN\\20220620\\gene_exp\\";
+    public static List<LineageTree> newickToLineageTreeList(String content) {
+        NewickTree newickTree = NewickTree.readNewickFormat(content);
 
-        File file = new File(rootPath);
-        for (File newickFile : file.listFiles()) {
-            String fileName = newickFile.getName().substring(0, newickFile.getName().lastIndexOf("_"));
-            String content = FileUtil.readString(newickFile, Charset.forName("UTF-8"));
-            NewickTree newickTree = NewickTree.readNewickFormat(content);
+        Node root = newickTree.getRoot();
 
-            Node root = newickTree.getRoot();
-
-            List<LineageTree> list = new ArrayList<>();
-            Integer generation = 1;
-            each(root, list, generation, fileName);
-            Map<String, Object> model = new HashMap<>();
-            model.put("list", list);
-            try (FileOutputStream os = new FileOutputStream(rootPath + fileName + ".xlsx")) {
-                JxlsUtils.exportExcel("E:\\IdeaSpace\\Cloud\\lineageChart\\src\\main\\resources\\poi\\newick.xlsx",
-                        os, model);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+        List<LineageTree> list = new ArrayList<>();
+        Integer generation = 1;
+        each(root, list, generation, "fileName");
+        return list;
     }
 
     public static void each(Node node, List<LineageTree> list, Integer generation, String treeId) {
         ArrayList<Node> children = node.getChildren();
         String name = node.getParent() == null ? "" : node.getParent().getName();
-        System.out.println(node.getName() + "\t" + name);
-
         LineageTree lineageTree = new LineageTree();
 
         lineageTree.setNodeId(node.getName());
@@ -265,4 +249,20 @@ public class NewickTree {
         children.forEach(e -> each(e, list, i, treeId));
     }
 
+    public static void main(String[] args) {
+        String content = "(((ADH2:0.1[&&NHX:S=human:E=1.1.1.1], ADH1:0.11[&&NHX:S=human:E=1.1.1.1]):0" +
+                ".05[&&NHX:S=Primates:B=100.0:D=S:E=1.1.1.1], ADHY:0.1[&&NHX:S=nematode:E=1.1.1.1],ADHX:0" +
+                ".12[&&NHX:S=insect:E=1.1.1.1]):0.1[&&NHX:S=Metazoa:D=N:E=1.1.1.1], (ADH4:0.09[&&NHX:S=yeast:E=1.1.1" +
+                ".1],ADH3:0.13[&&NHX:S=yeast:E=1.1.1.1], ADH2:0.12[&&NHX:S=yeast:E=1.1.1.1],ADH1:0" +
+                ".11[&&NHX:S=yeast:E=1.1.1.1]):0.1 [&&NHX:S=Fungi])[&&NHX:D=N:E=1.1.1.1];";
+        NewickTree newickTree = NewickTree.readNewickFormat(content);
+
+        Node root = newickTree.getRoot();
+
+        List<LineageTree> list = new ArrayList<>();
+        Integer generation = 1;
+        each(root, list, generation, "fileName");
+
+        System.out.println(list);
+    }
 } 

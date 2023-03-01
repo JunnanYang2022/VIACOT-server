@@ -2,7 +2,6 @@ package com.lineage.chart.service.impl;
 
 import cn.hutool.core.lang.UUID;
 import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.util.IOUtils;
 import com.lineage.chart.constant.CellTypeConstant;
 import com.lineage.chart.entity.CellType;
 import com.lineage.chart.entity.GenesExpression;
@@ -18,6 +17,7 @@ import com.lineage.chart.vo.GeneCompareTreeChartVO;
 import com.lineage.chart.vo.SearchVO;
 import com.lineage.chart.vo.SimilarityVO;
 import com.lineage.chart.vo.TreeChartVO;
+import com.lineage.data.util.NewickTree;
 import com.lineage.utils.Similarity;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -134,9 +133,9 @@ public class LineageChartServiceImpl implements LineageChartService {
         List<TreeChartVO> chartList2 = new ArrayList<>();
 
         Map<String, Integer> genesExpressions1Map = genesExpressions1.parallelStream()
-                        .collect(Collectors.toMap(GenesExpression::getNodeName,GenesExpression::getExpressionOrBlot));
+                .collect(Collectors.toMap(GenesExpression::getNodeName, GenesExpression::getExpressionOrBlot));
         Map<String, Integer> genesExpressions2Map = genesExpressions2.parallelStream()
-                        .collect(Collectors.toMap(GenesExpression::getNodeName,GenesExpression::getExpressionOrBlot));
+                .collect(Collectors.toMap(GenesExpression::getNodeName, GenesExpression::getExpressionOrBlot));
         lineageTree.forEach(e -> {
             TreeChartVO chart1 = new TreeChartVO();
             TreeChartVO chart2 = new TreeChartVO();
@@ -151,7 +150,7 @@ public class LineageChartServiceImpl implements LineageChartService {
             if (Objects.isNull(expressionOrBlot1)) {
                 chart1.setItemStyle(noDetectedItemStyle);
                 chart1.setName(e.getName() + "(Expression Undetermined)");
-            }else {
+            } else {
                 chart1.setItemStyle(expressionOrBlot1 <= 0 ? defaultItemStyle : expressionItemStyle1);
                 chart1.setExpressionOrBlot(expressionOrBlot1);
                 chart1.setName(e.getName() + "(" + expressionOrBlot1 + ")");
@@ -159,7 +158,7 @@ public class LineageChartServiceImpl implements LineageChartService {
             if (Objects.isNull(expressionOrBlot2)) {
                 chart2.setItemStyle(noDetectedItemStyle);
                 chart2.setName(e.getName() + "(Expression Undetermined)");
-            }else {
+            } else {
                 chart2.setItemStyle(expressionOrBlot2 <= 0 ? defaultItemStyle : expressionItemStyle2);
                 chart2.setExpressionOrBlot(expressionOrBlot2);
                 chart2.setName(e.getName() + "(" + expressionOrBlot2 + ")");
@@ -291,16 +290,10 @@ public class LineageChartServiceImpl implements LineageChartService {
 
 
     @Override
-    public void upload(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-        byte[] buffer = new byte[1024];
-        int len;
-        StringBuilder json = new StringBuilder();
-        while ((len = inputStream.read(buffer)) != -1) {
-            json.append(new String(buffer, 0, len));
-        }
+    public void upload(MultipartFile file) {
+        String content = readFileContent(file);
         //每个顶级节点都会作为此对象的一个元素解析进来
-        List<LineageTree> source = JSONArray.parseArray(json.toString(), LineageTree.class);
+        List<LineageTree> source = JSONArray.parseArray(content, LineageTree.class);
         //所有父子节点  都作为单个节点存入target 待入库
         List<LineageTree> target = new ArrayList<>();
         source.forEach(e -> {
@@ -317,7 +310,28 @@ public class LineageChartServiceImpl implements LineageChartService {
         if (!CollectionUtils.isEmpty(target)) {
             mapper.insertBatch(target);
         }
-        IOUtils.close(inputStream);
+    }
+
+    @Override
+    public List<TreeChartVO> uploadNewick(MultipartFile file) {
+        String content = readFileContent(file);
+
+        List<LineageTree> lineageTreeList = NewickTree.newickToLineageTreeList(content);
+
+        List<TreeChartVO> all = lineageTreeList.stream().map(e -> {
+            TreeChartVO treeChartVO = new TreeChartVO();
+            treeChartVO.setNodeId(e.getNodeId());
+            treeChartVO.setName(e.getNodeName());
+            treeChartVO.setAncestorId(e.getAncestorId());
+            treeChartVO.setGeneration(e.getGeneration());
+            return treeChartVO;
+        }).collect(Collectors.toList());
+
+        //过滤出某代的数据作为一级节点
+        List<TreeChartVO> root =
+                all.parallelStream().filter(e -> e.getGeneration().equals(1)).collect(Collectors.toList());
+
+        return getTree(root, all, null);
     }
 
     @Override
@@ -439,5 +453,19 @@ public class LineageChartServiceImpl implements LineageChartService {
         target.setExpressionOrBlot(source.getExpressionOrBlot());
         target.setChildren(source.getChildren());
         target.setItemStyle(source.getItemStyle());
+    }
+
+    private String readFileContent(MultipartFile file) {
+        try (InputStream inputStream = file.getInputStream()) {
+            byte[] buffer = new byte[1024];
+            int len;
+            StringBuilder sb = new StringBuilder();
+            while ((len = inputStream.read(buffer)) != -1) {
+                sb.append(new String(buffer, 0, len));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("read file error!");
+        }
     }
 }

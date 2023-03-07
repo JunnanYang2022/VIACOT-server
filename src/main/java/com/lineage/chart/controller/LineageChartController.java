@@ -1,5 +1,7 @@
 package com.lineage.chart.controller;
 
+import cn.hutool.core.io.FileUtil;
+import com.alibaba.fastjson.JSONObject;
 import com.lineage.chart.entity.CellType;
 import com.lineage.chart.qo.ConstructQO;
 import com.lineage.chart.qo.SearchQo;
@@ -8,16 +10,22 @@ import com.lineage.chart.vo.GeneCompareTreeChartVO;
 import com.lineage.chart.vo.SearchVO;
 import com.lineage.chart.vo.SimilarityVO;
 import com.lineage.chart.vo.TreeChartVO;
+import com.lineage.newick.Node;
 import com.lineage.response.ResultBean;
 import com.lineage.response.ResultHandler;
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -152,6 +160,31 @@ public class LineageChartController {
         } catch (Exception e) {
             LOGGER.error("上传文件出错:", e);
             return ResultHandler.error("上传失败，请稍后重试！");
+        }
+    }
+
+    @GetMapping("/downloadNewick")
+    public void downloadTreeNewickFile(@RequestParam String treeId, HttpServletResponse response) throws IOException {
+        String newick = service.constructNewickData(treeId);
+        InputStream inputStream = new ByteArrayInputStream(newick.getBytes());
+        download(response,inputStream,treeId + ".newick");
+    }
+
+    public static void download(HttpServletResponse response, InputStream inputStream, String fileName) {
+        OutputStream outputStream = null;
+        try {
+            outputStream = response.getOutputStream();
+            response.setContentType("application/octet-stream;");
+            response.setCharacterEncoding("UTF-8");
+            String dfileName = new String(fileName.getBytes("gb2312"), "iso8859-1");
+            response.setHeader("Content-Disposition", "attachment; filename=" + dfileName);
+            IOUtils.copy(inputStream, outputStream);
+            outputStream.flush();
+        } catch (Exception e) {
+            throw new RuntimeException("download error：" + e.getMessage());
+        } finally {
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(outputStream);
         }
     }
 

@@ -2,6 +2,7 @@ package com.lineage.chart.service.impl;
 
 import cn.hutool.core.lang.UUID;
 import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.lineage.chart.constant.CellTypeConstant;
 import com.lineage.chart.entity.CellType;
 import com.lineage.chart.entity.GenesExpression;
@@ -18,6 +19,8 @@ import com.lineage.chart.vo.SearchVO;
 import com.lineage.chart.vo.SimilarityVO;
 import com.lineage.chart.vo.TreeChartVO;
 import com.lineage.data.util.NewickTree;
+import com.lineage.newick.NHXNode;
+import com.lineage.newick.Node;
 import com.lineage.utils.Similarity;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -25,7 +28,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -398,6 +403,24 @@ public class LineageChartServiceImpl implements LineageChartService {
     @Override
     public List<CellType> getCellTypeList(String treeId) {
         return cellTypeMapper.selectListByTreeId(treeId);
+    }
+
+    @Override
+    public String constructNewickData(String treeId) throws IOException {
+        Integer generation = 1;
+        List<TreeChartVO> all = mapper.queryLineageTreeData(treeId, generation);
+
+        //过滤出某代的数据作为一级节点
+        List<TreeChartVO> root =
+                all.parallelStream().filter(e -> e.getGeneration().equals(generation)).collect(Collectors.toList());
+
+        settChildrenNode(root, all);
+
+
+        NHXNode node = JSONObject.parseObject(JSONObject.toJSONString(root.get(0)), NHXNode.class);
+        StringWriter writer = new StringWriter();
+        node.printTree(writer);
+        return writer.toString();
     }
 
 

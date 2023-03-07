@@ -81,4 +81,6 @@ public interface LineageChartService {
      * @return list
      */
     List<CellType> getCellTypeList(String treeId);
+
+    String constructNewickData(String treeId) throws IOException;
 }

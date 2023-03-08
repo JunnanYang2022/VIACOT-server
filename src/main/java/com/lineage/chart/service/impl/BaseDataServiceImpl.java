@@ -43,5 +43,10 @@ public class BaseDataServiceImpl implements BaseDataService {
         return result;
     }
 
+    @Override
+    public Tree queryTreeById(String treeId) {
+        return mapper.queryTreeById(treeId);
+    }
+
 
 }

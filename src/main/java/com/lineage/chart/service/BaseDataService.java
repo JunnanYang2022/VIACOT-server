@@ -1,6 +1,7 @@
 package com.lineage.chart.service;
 
 import com.lineage.chart.entity.SelectModel;
+import com.lineage.chart.entity.Tree;
 
 import java.util.List;
 
@@ -25,4 +26,11 @@ public interface BaseDataService {
      * @return List
      */
     List<SelectModel> queryGeneByTreeId(String treeId);
+
+    /**
+     * 查询树
+     *
+     * @return Tree
+     */
+    Tree queryTreeById(String treeId);
 }

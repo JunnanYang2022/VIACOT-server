@@ -8,6 +8,12 @@
         ORDER BY tree_index ASC
     </select>
 
+    <select id="queryTreeById" resultType="com.lineage.chart.entity.Tree">
+        SELECT tree_id, tree_name
+        FROM tb_tree
+        WHERE tree_id = #{treeId}
+    </select>
+
     <select id="queryGeneByTreeId" resultType="java.lang.String">
         SELECT DISTINCT gene_name
         FROM tb_genes_expression

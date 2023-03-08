@@ -1,6 +1,7 @@
 package com.lineage.chart.controller;
 
 import com.lineage.chart.entity.SelectModel;
+import com.lineage.chart.entity.Tree;
 import com.lineage.chart.qo.ConstructQO;
 import com.lineage.chart.service.BaseDataService;
 import com.lineage.response.ResultBean;
@@ -40,6 +41,22 @@ public class BaseDataController {
         try {
             List<SelectModel> vo = service.queryTreeSelectModel(qo.getActiveTab());
             return ResultHandler.ok(vo);
+        } catch (Exception e) {
+            LOGGER.error("树基础下拉框数据：", e);
+            return ResultHandler.error("构造树基础下拉框数据发生错误，请联系管理员！");
+        }
+    }
+
+    /**
+     * 获取树下拉框数据
+     *
+     * @return ResultBean
+     */
+    @RequestMapping("/treeById")
+    public ResultBean<Object> treeById(ConstructQO qo) {
+        try {
+            Tree tree = service.queryTreeById(qo.getTreeId());
+            return ResultHandler.ok(tree);
         } catch (Exception e) {
             LOGGER.error("树基础下拉框数据：", e);
             return ResultHandler.error("构造树基础下拉框数据发生错误，请联系管理员！");

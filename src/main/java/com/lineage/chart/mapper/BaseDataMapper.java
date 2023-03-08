@@ -21,6 +21,13 @@ public interface BaseDataMapper {
     List<Tree> queryTree();
 
     /**
+     * 从数据表查树id
+     *
+     * @return 树id集合
+     */
+    Tree queryTreeById(@Param("treeId") String treeId);
+
+    /**
      * 查询某棵树的基因
      *
      * @param treeId 树id

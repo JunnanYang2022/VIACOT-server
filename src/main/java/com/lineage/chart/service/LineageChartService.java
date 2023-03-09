@@ -40,7 +40,7 @@ public interface LineageChartService {
      * @param file json文件
      * @throws IOException IO异常
      */
-    List<TreeChartVO> uploadNewick(MultipartFile file);
+    List<TreeChartVO> uploadNewick(MultipartFile file) throws IOException;
 
     /**
      * 查询树

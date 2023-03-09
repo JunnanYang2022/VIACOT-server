@@ -1,6 +1,8 @@
 package com.lineage.chart.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.RandomUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.lineage.chart.constant.CellTypeConstant;
@@ -18,9 +20,8 @@ import com.lineage.chart.vo.GeneCompareTreeChartVO;
 import com.lineage.chart.vo.SearchVO;
 import com.lineage.chart.vo.SimilarityVO;
 import com.lineage.chart.vo.TreeChartVO;
-import com.lineage.data.util.NewickTree;
 import com.lineage.newick.NHXNode;
-import com.lineage.newick.Node;
+import com.lineage.newick.NHXParser;
 import com.lineage.utils.Similarity;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -317,11 +318,12 @@ public class LineageChartServiceImpl implements LineageChartService {
         }
     }
 
-    @Override
-    public List<TreeChartVO> uploadNewick(MultipartFile file) {
-        String content = readFileContent(file);
 
-        List<LineageTree> lineageTreeList = NewickTree.newickToLineageTreeList(content);
+    @Override
+    public List<TreeChartVO> uploadNewick(MultipartFile file) throws IOException {
+//        String content = readFileContent(file);
+//        List<LineageTree> lineageTreeList = NewickTree.newickToLineageTreeList(content);
+        List<LineageTree> lineageTreeList = newickToLineageTreeList(file);
 
         List<TreeChartVO> all = lineageTreeList.stream().map(e -> {
             TreeChartVO treeChartVO = new TreeChartVO();
@@ -336,8 +338,10 @@ public class LineageChartServiceImpl implements LineageChartService {
         List<TreeChartVO> root =
                 all.parallelStream().filter(e -> e.getGeneration().equals(1)).collect(Collectors.toList());
 
-        return getTree(root, all, null);
+        settChildrenNode(root, all);
+        return root;
     }
+
 
     @Override
     public List<SearchVO> search(SearchQo qo) {
@@ -490,5 +494,38 @@ public class LineageChartServiceImpl implements LineageChartService {
         } catch (Exception e) {
             throw new RuntimeException("read file error!");
         }
+    }
+
+    private List<LineageTree> newickToLineageTreeList(MultipartFile file) throws IOException {
+        List<LineageTree> list = new ArrayList<>();
+        NHXParser p = new NHXParser(file.getInputStream());
+        NHXNode root = p.parse();
+
+        Integer generation = 1;
+        each(root, null, list, generation, file.getOriginalFilename());
+        return list;
+    }
+
+    private void each(NHXNode node, String ancestorId, List<LineageTree> list, Integer generation, String treeId) {
+        List<NHXNode> children = node.getChildren();
+
+        String label = StringUtils.isBlank(node.getLabel()) ? "None:" + RandomUtil.randomStringUpper(5) :
+                node.getLabel();
+        LineageTree lineageTree = new LineageTree();
+        lineageTree.setNodeId(label);
+        lineageTree.setNodeName(label);
+        lineageTree.setAncestorId(ancestorId);
+        lineageTree.setTreeId(treeId);
+        lineageTree.setGeneration(generation);
+
+        list.add(lineageTree);
+
+        generation++;
+
+        if (CollectionUtil.isEmpty(children)) {
+            return;
+        }
+        final Integer i = generation;
+        children.forEach(e -> each(e, label, list, i, treeId));
     }
 }
